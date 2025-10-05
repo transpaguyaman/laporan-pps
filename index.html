@@ -4,7 +4,6 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Portfolio — dengan Laporan Kasir</title>
-  <!-- jika template Anda punya CSS global, biarkan; juga panggil kasir-style agar konsisten -->
   <link rel="stylesheet" href="assets/kasir-style.css">
 </head>
 <body class="kasir-body">
@@ -91,6 +90,55 @@
       margin: 10px 0;
     }
   }
+
+  /* ===== Hero Section ===== */
+  .hero {
+    text-align: center;
+    background: linear-gradient(135deg, #1e1e1e, #333);
+    color: #fff;
+    border-radius: 12px;
+    padding: 40px 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  }
+
+  .hero h1 {
+    font-size: 2rem;
+    margin-bottom: 10px;
+  }
+
+  .hero p {
+    font-size: 1rem;
+    color: #ccc;
+  }
+
+  .btn {
+    display: inline-block;
+    text-decoration: none;
+    border: 1px solid #00bcd4;
+    padding: 10px 20px;
+    border-radius: 6px;
+    color: #00bcd4;
+    margin: 5px;
+    transition: all 0.3s ease;
+  }
+
+  .btn.primary {
+    background-color: #00bcd4;
+    color: #fff;
+  }
+
+  .btn:hover {
+    background-color: #0097a7;
+    color: #fff;
+  }
+
+  .kasir-footer {
+    text-align: center;
+    margin-top: 40px;
+    padding: 20px;
+    color: #999;
+    font-size: 0.9rem;
+  }
 </style>
 
 <script>
@@ -108,20 +156,27 @@
   });
 </script>
 
-  <main style="padding:28px;">
-    <section class="hero card">
-      <h1>Selamat datang</h1>
-      <p class="muted">Proyek template Anda sudah ditambahkan halaman laporan kasir & laporan AC (dark elegan).</p>
-      <div style="margin-top:12px">
-        <a class="btn primary" href="laporan-kasir.html">Buka Laporan Kasir</a>
-        <a class="btn" href="laporan-ac.html">Buka Laporan AC</a>
-      </div>
-    </section>
+<main style="padding:28px;">
+  <section class="hero card">
+    <h1>Selamat Datang di Dashboard Laporan PPS</h1>
+    <p class="muted">
+      Di sini Anda dapat mengelola, memantau, dan menyajikan laporan kasir serta laporan AC dengan tampilan yang elegan dan mudah dipahami.
+    </p>
+<p style="max-width:600px; margin:auto;">
+  Website ini dikembangkan untuk membantu kasir dalam membuat dan mengelola laporan harian dengan lebih cepat, efisien, dan akurat.  
+  Sistem ini dirancang agar proses pencatatan, perhitungan, serta pelaporan menjadi lebih mudah dan terorganisir, sehingga waktu kerja dapat digunakan secara optimal.
+</p>
 
-    <!-- sisipkan konten portfolio Anda di sini (biarkan template asli) -->
-  </main>
+    <div style="margin-top:20px">
+      <a class="btn primary" href="laporan-kasir.html">📊 Buka Laporan Kasir</a>
+      <a class="btn" href="laporan-ac.html">🧊 Buka Laporan AC</a>
+    </div>
+  </section>
+</main>
 
-  <footer class="kasir-footer">© Anda — integrated kasir report</footer>
+<footer class="kasir-footer">
+  Created by <strong>@dit.utinaa_</strong> | Trans Paguyaman (IYU8)
+</footer>
 
 </body>
 </html>
