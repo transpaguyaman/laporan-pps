@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Laporan AC — TRAP 1YU8</title>
+  <link rel="stylesheet" href="assets/kasir-style.css">
+</head>
+<body class="kasir-body">
+
+<!-- Navbar -->
+<header>
+  <nav class="navbar">
+    <div class="logo">Laporan PPS</div>
+    <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
+    <ul class="nav-links">
+      <li><a href="index.html" class="nav-link">Home</a></li>
+      <li><a href="laporan-kasir.html" class="nav-link">Laporan Kasir</a></li>
+      <li><a href="laporan-ac.html" class="nav-link">Laporan AC</a></li>
+    </ul>
+  </nav>
+</header>
+
+<style>
+  /* ===== Navbar Style ===== */
+  .navbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #1e1e1e;
+    padding: 10px 20px;
+    color: #fff;
+  }
+
+  .navbar .logo {
+    font-size: 1.2rem;
+    font-weight: bold;
+  }
+
+  .nav-links {
+    list-style: none;
+    display: flex;
+    gap: 20px;
+    margin: 0;
+    padding: 0;
+  }
+
+  .nav-link {
+    color: #fff;
+    text-decoration: none;
+    transition: color 0.3s;
+  }
+
+  .nav-link:hover,
+  .nav-link.active {
+    color: #00bcd4;
+  }
+
+  /* Responsive Menu */
+  .menu-toggle {
+    display: none;
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 1.5rem;
+    cursor: pointer;
+  }
+
+  @media (max-width: 768px) {
+    .menu-toggle {
+      display: block;
+    }
+
+    .nav-links {
+      position: absolute;
+      top: 60px;
+      right: 0;
+      background-color: #1e1e1e;
+      flex-direction: column;
+      width: 200px;
+      padding: 15px;
+      display: none;
+    }
+
+    .nav-links.show {
+      display: flex;
+    }
+
+    .nav-links li {
+      margin: 10px 0;
+    }
+  }
+</style>
+
+<script>
+  // Toggle mobile menu
+  document.querySelector(".menu-toggle").addEventListener("click", () => {
+    document.querySelector(".nav-links").classList.toggle("show");
+  });
+
+  // Highlight active link
+  const currentPage = window.location.pathname.split("/").pop();
+  document.querySelectorAll(".nav-link").forEach(link => {
+    if (link.getAttribute("href") === currentPage) {
+      link.classList.add("active");
+    }
+  });
+</script>
+
+<main class="container">
+  <div class="card header-card">
+    <div class="actions">
+      <input id="acDate" type="date" class="input-text" />
+      <input id="storeName" placeholder="Toko (ex: TRAP 1YU8)" class="input-text" />
+      <button id="btnGenerateAC" class="btn primary">Generate Laporan AC</button>
+      <button id="btnCopyAC" class="btn">Copy ke clipboard</button>
+    </div>
+  </div>
+
+  <section class="card">
+    <h3>Target</h3>
+    <div id="targets" class="targets-grid"></div>
+  </section>
+
+  <section class="card">
+    <h3>Preview Laporan AC</h3>
+    <pre id="reportAC" class="pre-box"></pre>
+  </section>
+</main>
+
+<script src="assets/ac.js"></script>
+</body>
+</html>
