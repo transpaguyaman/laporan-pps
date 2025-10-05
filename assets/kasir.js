@@ -58,21 +58,39 @@ function renderSlots(){
 
 // build shift report text
 function fmtRp(n){ return n===null || n===undefined || n==='' ? '' : Number(n).toLocaleString('id-ID'); }
-function buildShiftReport(){
+function buildShiftReport() {
   const name = state.cashier || '(nama kasir)';
+  const s1 = ["10:00","12:00","15:00"];
+  const s2 = ["18:00","20:00","23:00"];
   const lines = [];
-  lines.push(`*FORMAT LAPORAN SIFT ${name}*`);
-  for (const jam of Object.keys(state.slots)){
-    lines.push(''); lines.push(`*JAM ${jam}*`);
-    const s = state.slots[jam];
-    for (const k of Object.keys(s)){
-      if (k === 'SALES_NOMINAL'){
-        lines.push(`- SALES (nominal Rp) : ${s[k] === null ? '' : fmtRp(s[k])}`);
-      } else {
-        lines.push(`- ${k} : ${s[k] || 0}`);
+
+  // fungsi bantu untuk render satu shift
+  function addShift(title, jamList) {
+    lines.push(`*FORMAT LAPORAN SIFT ${title.toUpperCase()} ${name.toUpperCase()}*`);
+    for (const jam of jamList) {
+      const s = state.slots[jam];
+      if (!s) continue;
+      lines.push('');
+      lines.push(`*JAM ${jam.replace(':', '.')}*`);
+      if (jam === "15:00" || jam === "23:00") {
+        lines.push(`- SALES : ${s.SALES_NOMINAL ? fmtRp(s.SALES_NOMINAL) : ''}`);
       }
+      lines.push(`- PWP (30) : ${s.PWP || 0}`);
+      lines.push(`- PSM (94) : ${s.PSM || 0}`);
+      lines.push(`- SG (10) : ${s.SG || 0}`);
+      lines.push(`- SUEGER (20) : ${s.SEGER || 0}`);
+      lines.push(`- CEBAN (5) : ${s.CEBAN || 0}`);
+      lines.push(`- NEW MEMBER (2) : ${s.NEWMEMBER || 0}`);
+      lines.push(`- FIGURIN (2) : ${s.FIGURIN || 0}`);
+      lines.push(`- FIFA (1) : ${s.FIFA || 0}`);
+      lines.push(`- CASHBACK : ${s.CASHBACK || 0}`);
     }
+    lines.push('');
   }
+
+  addShift('1', s1);
+  addShift('2', s2);
+
   return lines.join('\n');
 }
 
