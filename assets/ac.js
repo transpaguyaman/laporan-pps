@@ -1,93 +1,98 @@
-/* ac.js - read kasir data from localStorage (same key), compute totals vs target, render AC report */
-const K_KEY = 'kasir_report_template_v1';
+/* ac.js — versi sinkron dengan kasir.js */
+const K_KEY = 'kasir_report_data'; // gunakan data dari kasir.js
 const $ = id => document.getElementById(id);
 
-// default targets
-const DEFAULT_TARGETS = { PSM:58, PWP:20, SEGA:6, SEGER:10, CEBAN:5, "NEW MEMBER":2, FIGURIN:1, Cashback:3 };
+// Target default promo & cashback
+const DEFAULT_TARGETS = {
+  PSM: 94, PWP: 30, SEGA: 10, SEGER: 20, CEBAN: 5,
+  FIGURIN: 2, FIFA: 1, "NEW MEMBER": 2,
+  "SUSU HEBAT": 2, SETUJU: 3, "HOME CARE": 2, DIAPRES: 2
+};
 
-function loadState(){
-  try { return JSON.parse(localStorage.getItem(K_KEY) || '{}'); } catch(e){ return {}; }
-}
-function saveTargets(targets){
-  // persist only targets in a separate key
-  localStorage.setItem('kasir_targets_v1', JSON.stringify(targets));
-}
-
-function loadTargets(){
-  const raw = localStorage.getItem('kasir_targets_v1');
-  if (!raw) return Object.assign({}, DEFAULT_TARGETS);
-  try { return Object.assign({}, DEFAULT_TARGETS, JSON.parse(raw)); } catch(e){ return Object.assign({}, DEFAULT_TARGETS); }
-}
-
-// render targets UI
-function renderTargetsUI(){
-  const box = $('targets'); box.innerHTML = '';
-  const targets = loadTargets();
-  for (const key of Object.keys(targets)){
-    const row = document.createElement('div'); row.className='target-row';
-    const lbl = document.createElement('label'); lbl.textContent = key;
-    const inp = document.createElement('input'); inp.type='number'; inp.min=0; inp.value = targets[key];
-    inp.onchange = (e)=>{ targets[key] = Math.max(0, parseInt(e.target.value||0,10)); saveTargets(targets); };
-    row.append(lbl, inp); box.appendChild(row);
+// Ambil data laporan kasir
+function loadKasirData() {
+  try {
+    return JSON.parse(localStorage.getItem(K_KEY)) || {};
+  } catch {
+    return {};
   }
 }
 
-// compute totals from kasir data
-function sumField(field){
-  const st = loadState();
-  if (!st || !st.slots) return 0;
-  return Object.values(st.slots).reduce((acc,s)=> acc + (Number(s[field] || 0) || 0), 0);
+// Hitung total jual dari seluruh jam untuk 1 promo/cashback
+function sumByName(name) {
+  const data = loadKasirData();
+  if (!data || !data.jam) return 0;
+
+  let total = 0;
+  // Loop setiap jam dan tipe data (Promo/Cashback)
+  data.jam.forEach(jam => {
+    const keyPromo = `Promo_${jam}_${name}`;
+    const keyCash = `Cashback_${jam}_${name}`;
+    if (data[keyPromo]) total += Number(data[keyPromo]) || 0;
+    if (data[keyCash]) total += Number(data[keyCash]) || 0;
+  });
+  return total;
 }
 
-function formatRp(n){ return (Number(n)||0).toLocaleString('id-ID'); }
-
-// build AC report
-function buildACReport(){
-  const targets = loadTargets();
-  const mapping = [
-    {label:'PSM',field:'PSM'},
-    {label:'PWP',field:'PWP'},
-    {label:'SEGA',field:'SG'},
-    {label:'SEGER',field:'SEGER'},
-    {label:'CEBAN',field:'CEBAN'},
-    {label:'NEW MEMBER',field:'NEWMEMBER'},
-    {label:'FIGURIN',field:'FIGURIN'},
-    {label:'Cashback',field:'CASHBACK'}
-  ];
-  const lines = [];
-  const st = loadState();
-  const date = $('acDate').value || (st.date || new Date().toISOString().slice(0,10));
+// Buat laporan AC format teks siap kirim
+function buildACReport() {
+  const laporan = loadKasirData();
+  const date = $('acDate').value || new Date().toISOString().slice(0, 10);
   const store = $('storeName').value || 'TRAP 1YU8';
+  const shift = laporan.shift || 1;
+
+  const promoList = ["PSM", "PWP", "SEGA", "SEGER", "CEBAN", "FIGURIN", "FIFA", "NEW MEMBER"];
+  const cashbackList = ["SUSU HEBAT", "SETUJU", "HOME CARE", "DIAPRES"];
+
+  const lines = [];
   lines.push('Semangat pagi...');
   lines.push('');
-  lines.push('Format laporan pershif');
-  lines.push(`Tanggal: ${date}`);
+  lines.push('*Format laporan pershif* (isi targetnya / shift)');
+  lines.push(`Tanggal : ${date}`);
   lines.push(`Toko : ${store}`);
+  lines.push(`Shift : ${shift}`);
   lines.push('');
-  lines.push('PROMO / TGT / AKTUAL / %');
+  lines.push('*Promo / tgt / jual / %*');
 
-  for (const m of mapping){
-    const tgt = Number(targets[m.label] || 0);
-    const actual = sumField(m.field);
-    const pct = tgt>0 ? Math.round((actual / tgt) * 100) : 0;
-    lines.push(`${m.label} /${tgt}/ ${actual}/ ${pct}%`);
-  }
+  promoList.forEach(name => {
+    const tgt = DEFAULT_TARGETS[name] || 0;
+    const jual = sumByName(name);
+    const pct = tgt > 0 ? Math.round((jual / tgt) * 100) : 0;
+    lines.push(`${name}/${tgt}/${jual}/${pct}%`);
+  });
 
-  const totalNom = sumField('SALES_NOMINAL');
   lines.push('');
-  lines.push(`Total Nominal SALES (Rp): ${formatRp(totalNom)}`);
+  lines.push('*Cashback / target / reedem / %*');
+
+  cashbackList.forEach(name => {
+    const tgt = DEFAULT_TARGETS[name] || 0;
+    const jual = sumByName(name);
+    const pct = tgt > 0 ? Math.round((jual / tgt) * 100) : 0;
+    lines.push(`${name}/${tgt}/${jual}/${pct}%`);
+  });
+
   lines.push('');
-  lines.push('kasir langsung laporan ke AC MAX JAM 16.30');
+  lines.push('*KASIR LANGSUNG LAPORAN KE AC MAX JAM 15.30 dan jam 22.00 / SEBELUM KLEREK*');
+
   return lines.join('\n');
 }
 
-document.addEventListener('DOMContentLoaded', ()=>{
-  renderTargetsUI();
-  // set default date/store
-  const st = loadState(); $('acDate').value = st.date || new Date().toISOString().slice(0,10);
+// Inisialisasi halaman
+document.addEventListener('DOMContentLoaded', () => {
+  $('acDate').value = new Date().toISOString().slice(0, 10);
   $('storeName').value = 'TRAP 1YU8';
-  $('btnGenerateAC').onclick = ()=> { $('reportAC').textContent = buildACReport(); };
-  $('btnCopyAC').onclick = ()=> { navigator.clipboard.writeText($('reportAC').textContent).then(()=> alert('Laporan AC disalin ke clipboard')); };
-  // initial render
+
+  // Tombol generate laporan
+  $('btnGenerateAC').onclick = () => {
+    $('reportAC').textContent = buildACReport();
+  };
+
+  // Tombol copy laporan
+  $('btnCopyAC').onclick = () => {
+    navigator.clipboard.writeText($('reportAC').textContent)
+      .then(() => alert('📋 Laporan AC disalin ke clipboard!'));
+  };
+
+  // Auto tampilkan laporan saat halaman dibuka
   $('reportAC').textContent = buildACReport();
 });
