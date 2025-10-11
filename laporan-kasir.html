@@ -15,7 +15,7 @@
     <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
     <ul class="nav-links">
       <li><a href="index.html" class="nav-link">Home</a></li>
-      <li><a href="laporan-kasir.html" class="nav-link">Laporan Kasir</a></li>
+      <li><a href="laporan-kasir.html" class="nav-link active">Laporan Kasir</a></li>
       <li><a href="laporan-ac.html" class="nav-link">Laporan AC</a></li>
     </ul>
   </nav>
@@ -90,6 +90,26 @@
       margin: 10px 0;
     }
   }
+
+  /* Tambahan form kasir */
+  .kasir-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .kasir-controls input,
+  .kasir-controls select,
+  .kasir-controls button {
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+  }
+
+  .kasir-header {
+    margin-bottom: 20px;
+  }
 </style>
 
 <script>
@@ -108,18 +128,23 @@
 </script>
 
 <main class="container">
-  <div class="card header-card">
-    <div>
-      <h2>Laporan Shift Kasir</h2>
-      <p class="muted">Isi data per jam, lalu klik <strong>Generate Laporan</strong>. Data otomatis tersimpan di browser.</p>
+
+  <!-- Tambahan Form Kasir -->
+  <section class="kasir-header">
+    <h2>🧾 Input Laporan Kasir</h2>
+    <div class="kasir-controls">
+      <input id="kasirName" placeholder="Nama Kasir" class="input-text">
+      <select id="shiftNum" class="input-select">
+        <option value="1">Shift 1</option>
+        <option value="2">Shift 2</option>
+      </select>
+      <button id="saveReport" class="btn">💾 Simpan</button>
+      <button id="exportText" class="btn">📋 Salin Laporan</button>
+      <button id="clearData" class="btn danger">🗑️ Hapus Semua</button>
     </div>
-    <div class="actions">
-      <input id="cashierName" placeholder="Nama Kasir" class="input-text"/>
-      <button id="btnGenerate" class="btn primary">Generate Laporan</button>
-      <button id="btnSave" class="btn">Simpan</button>
-      <button id="btnReset" class="btn danger">Reset</button>
-    </div>
-  </div>
+  </section>
+
+  
 
   <section class="card">
     <h3>Input per jam</h3>
