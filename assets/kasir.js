@@ -1,135 +1,188 @@
-/* kasir.js - input per jam, nominal sales, save to localStorage, export, copy */
-const K_KEY = 'kasir_report_template_v1';
-const $ = id => document.getElementById(id);
+/* kasir.js - versi sinkron dengan HTML laporan-kasir.html */
 
-const DEFAULT_SLOTS = {
-  "10:00": {PWP:0, PSM:0, SG:0, SEGER:0, CEBAN:0, NEWMEMBER:0, FIGURIN:0, FIFA:0, CASHBACK:0, SALES_NOMINAL:null},
-  "12:00": {PWP:0, PSM:0, SG:0, SEGER:0, CEBAN:0, NEWMEMBER:0, FIGURIN:0, FIFA:0, CASHBACK:0, SALES_NOMINAL:null},
-  "15:00": {PWP:0, PSM:0, SG:0, SEGER:0, CEBAN:0, NEWMEMBER:0, FIGURIN:0, FIFA:0, CASHBACK:0, SALES_NOMINAL:0},
-  "18:00": {PWP:0, PSM:0, SG:0, SEGER:0, CEBAN:0, NEWMEMBER:0, FIGURIN:0, FIFA:0, CASHBACK:0, SALES_NOMINAL:null},
-  "20:00": {PWP:0, PSM:0, SG:0, SEGER:0, CEBAN:0, NEWMEMBER:0, FIGURIN:0, FIFA:0, CASHBACK:0, SALES_NOMINAL:null},
-  "23:00": {PWP:0, PSM:0, SG:0, SEGER:0, CEBAN:0, NEWMEMBER:0, FIGURIN:0, FIFA:0, CASHBACK:0, SALES_NOMINAL:0}
+const K_KEY = 'kasir_report_data';
+
+// Data default laporan
+const defaultReport = {
+  shift: 1,
+  kasir: '',
+  jam: ['10.00', '12.00', '15.00', '18.00', '20.00', '23.00'],
+  promo: [
+    { nama: 'PWP', tgt: 30 },
+    { nama: 'PSM', tgt: 94 },
+    { nama: 'SEGA', tgt: 10 },
+    { nama: 'CEBAN', tgt: 5 },
+    { nama: 'SUEGER', tgt: 20 },
+    { nama: 'NEW MEMBER', tgt: 2 },
+    { nama: 'FIGURIN', tgt: 2 },
+    { nama: 'FIFA', tgt: 1 }
+  ],
+  cashback: [
+    { nama: 'SUSU HEBAT', tgt: 2 },
+    { nama: 'SETUJU', tgt: 3 },
+    { nama: 'HOME CARE', tgt: 2 },
+    { nama: 'DIAPRES', tgt: 2 }
+  ]
 };
 
-let state = loadState();
+let laporan = JSON.parse(localStorage.getItem(K_KEY)) || defaultReport;
 
-// load or initialize
-function loadState(){
-  const raw = localStorage.getItem(K_KEY);
-  if (!raw) {
-    return { date: new Date().toISOString().slice(0,10), cashier:'', slots: JSON.parse(JSON.stringify(DEFAULT_SLOTS)) };
-  }
-  try { return JSON.parse(raw); } catch(e){ return { date: new Date().toISOString().slice(0,10), cashier:'', slots: JSON.parse(JSON.stringify(DEFAULT_SLOTS)) }; }
+// Inisialisasi halaman
+document.addEventListener('DOMContentLoaded', () => {
+  renderForm();
+  updatePreview();
+
+  document.getElementById('saveReport').addEventListener('click', saveReport);
+  document.getElementById('exportText').addEventListener('click', exportText);
+  document.getElementById('clearData').addEventListener('click', clearData);
+  document.getElementById('btnCopyShift').addEventListener('click', copyPreview);
+  document.getElementById('btnExportCSV').addEventListener('click', exportCSV);
+
+  document.getElementById('kasirName').value = laporan.kasir || '';
+  document.getElementById('shiftNum').value = laporan.shift || 1;
+});
+
+// Render form laporan ke dalam #slots
+function renderForm() {
+  const container = document.getElementById('slots');
+  container.innerHTML = '';
+
+  laporan.jam.forEach(jam => {
+    const section = document.createElement('section');
+    section.className = 'jam-section card-inner';
+    section.innerHTML = `<h3>🕒 JAM ${jam}</h3>`;
+
+    // PROMO section
+    const promoTitle = document.createElement('h4');
+    promoTitle.textContent = '🎯 PROMO / TARGET / JUAL / %';
+    section.appendChild(promoTitle);
+    section.appendChild(makeTable(laporan.promo, jam, 'Promo'));
+
+    // CASHBACK section
+    section.appendChild(document.createElement('hr'));
+    const cashTitle = document.createElement('h4');
+    cashTitle.textContent = '💰 CASHBACK';
+    section.appendChild(cashTitle);
+    section.appendChild(makeTable(laporan.cashback, jam, 'Cashback'));
+
+    container.appendChild(section);
+  });
 }
 
-function saveState(){ localStorage.setItem(K_KEY, JSON.stringify(state)); }
+// Buat tabel input tambah/kurang
+function makeTable(items, jam, tipe) {
+  const table = document.createElement('table');
+  table.className = 'laporan-table';
+  const tbody = document.createElement('tbody');
 
-// render slot inputs
-function renderSlots(){
-  const container = $('slots'); container.innerHTML = '';
-  for (const jam of Object.keys(state.slots)){
-    const slot = state.slots[jam];
-    const box = document.createElement('div'); box.className='slot';
-    box.innerHTML = `<h3>Jam ${jam}</h3>`;
-    for (const key of Object.keys(slot)){
-      const row = document.createElement('div'); row.className='row';
-      const label = document.createElement('label'); label.textContent = key;
-      const inc = document.createElement('button'); inc.className='btn'; inc.textContent='+';
-      inc.onclick = ()=> { if (slot[key] === null) slot[key] = 0; slot[key] = Number(slot[key]||0)+1; saveState(); renderSlots(); };
-      const dec = document.createElement('button'); dec.className='btn'; dec.textContent='-';
-      dec.onclick = ()=> { if (slot[key] === null) slot[key]=0; slot[key] = Math.max(0, Number(slot[key]||0)-1); saveState(); renderSlots(); };
-      const inp = document.createElement('input'); inp.type='number'; inp.value = slot[key]===null ? '' : slot[key]; inp.min=0;
-      inp.onchange = (e)=>{ const v = e.target.value; slot[key] = v === '' ? null : Math.max(0, parseInt(v,10) || 0); saveState(); renderSlots(); };
-      if (key === 'SALES_NOMINAL' && slot[key] === null){
-        const span = document.createElement('span'); span.className='small'; span.textContent='(tidak berlaku)';
-        row.append(label, span);
-      } else {
-        // format SALES_NOMINAL with placeholder
-        if (key === 'SALES_NOMINAL'){ inp.placeholder='nominal (Rp)'; inp.style.width='140px'; }
-        row.append(label, inc, dec, inp);
-      }
-      box.appendChild(row);
-    }
-    container.appendChild(box);
-  }
-  // fill cashier name
-  $('cashierName').value = state.cashier || '';
+  items.forEach(item => {
+    const row = document.createElement('tr');
+    const key = `${tipe}_${jam}_${item.nama}`;
+    const value = laporan[key] || 0;
+
+    row.innerHTML = `
+      <td>${item.nama} (${item.tgt})</td>
+      <td class="count-cell">
+        <button class="minus" onclick="changeValue('${key}', -1)">−</button>
+        <span id="${key}" class="count">${value}</span>
+        <button class="plus" onclick="changeValue('${key}', 1)">+</button>
+      </td>
+    `;
+    tbody.appendChild(row);
+  });
+
+  table.appendChild(tbody);
+  return table;
 }
 
-// build shift report text
-function fmtRp(n){ return n===null || n===undefined || n==='' ? '' : Number(n).toLocaleString('id-ID'); }
-function buildShiftReport() {
-  const name = state.cashier || '(nama kasir)';
-  const s1 = ["10:00","12:00","15:00"];
-  const s2 = ["18:00","20:00","23:00"];
+// Tombol tambah/kurang
+function changeValue(key, delta) {
+  const current = laporan[key] || 0;
+  laporan[key] = Math.max(0, current + delta);
+  document.getElementById(key).textContent = laporan[key];
+  localStorage.setItem(K_KEY, JSON.stringify(laporan));
+  updatePreview();
+}
+
+// Simpan laporan
+function saveReport() {
+  laporan.kasir = document.getElementById('kasirName').value || 'Tanpa Nama';
+  laporan.shift = document.getElementById('shiftNum').value || 1;
+  localStorage.setItem(K_KEY, JSON.stringify(laporan));
+  alert('✅ Laporan kasir disimpan!');
+  updatePreview();
+}
+
+// Buat teks laporan (tanpa salin otomatis)
+function generateReportText() {
   const lines = [];
+  lines.push(`*FORMAT LAPORAN SHIFT ${laporan.shift} ${laporan.kasir.toUpperCase()}*`);
 
-  // fungsi bantu untuk render satu shift
-  function addShift(title, jamList) {
-    lines.push(`*FORMAT LAPORAN SIFT ${title.toUpperCase()} ${name.toUpperCase()}*`);
-    for (const jam of jamList) {
-      const s = state.slots[jam];
-      if (!s) continue;
-      lines.push('');
-      lines.push(`*JAM ${jam.replace(':', '.')}*`);
-      if (jam === "15:00" || jam === "23:00") {
-        lines.push(`- SALES : ${s.SALES_NOMINAL ? fmtRp(s.SALES_NOMINAL) : ''}`);
-      }
-      lines.push(`- PWP (30) : ${s.PWP || 0}`);
-      lines.push(`- PSM (94) : ${s.PSM || 0}`);
-      lines.push(`- SG (10) : ${s.SG || 0}`);
-      lines.push(`- SUEGER (20) : ${s.SEGER || 0}`);
-      lines.push(`- CEBAN (5) : ${s.CEBAN || 0}`);
-      lines.push(`- NEW MEMBER (2) : ${s.NEWMEMBER || 0}`);
-      lines.push(`- FIGURIN (2) : ${s.FIGURIN || 0}`);
-      lines.push(`- FIFA (1) : ${s.FIFA || 0}`);
-      lines.push(`- CASHBACK : ${s.CASHBACK || 0}`);
-    }
+  laporan.jam.forEach(jam => {
+    lines.push(`\n*JAM ${jam}*`);
+    laporan.promo.forEach(p => {
+      const key = `Promo_${jam}_${p.nama}`;
+      lines.push(`- ${p.nama} (${p.tgt}) : ${laporan[key] || 0}`);
+    });
     lines.push('');
-  }
-
-  addShift('1', s1);
-  addShift('2', s2);
+    lines.push('*CASHBACK*');
+    laporan.cashback.forEach(c => {
+      const key = `Cashback_${jam}_${c.nama}`;
+      lines.push(`- ${c.nama} (${c.tgt}) : ${laporan[key] || 0}`);
+    });
+  });
 
   return lines.join('\n');
 }
 
-// build CSV and export
-function exportCSV(){
-  const rows = [['Tanggal','Kasir','Jam','PWP','PSM','SG','SEGER','CEBAN','NEW_MEMBER','FIGURIN','FIFA','CASHBACK','SALES_NOMINAL']];
-  for (const jam of Object.keys(state.slots)){
-    const s = state.slots[jam];
-    rows.push([state.date, state.cashier, jam, s.PWP, s.PSM, s.SG, s.SEGER, s.CEBAN, s.NEWMEMBER, s.FIGURIN, s.FIFA, s.CASHBACK, s.SALES_NOMINAL===null?'':s.SALES_NOMINAL]);
+// Update preview laporan di bawah
+function updatePreview() {
+  document.getElementById('report').textContent = generateReportText();
+}
+
+// Tombol “Salin Laporan”
+function exportText() {
+  const text = generateReportText();
+  navigator.clipboard.writeText(text);
+  alert('📋 Laporan kasir telah disalin ke clipboard!');
+}
+
+// Tombol “Copy Laporan Shift” (di preview)
+function copyPreview() {
+  const text = document.getElementById('report').textContent;
+  navigator.clipboard.writeText(text);
+  alert('📄 Laporan shift telah disalin!');
+}
+
+// Export ke CSV
+function exportCSV() {
+  let csv = 'JAM,TIPE,PROMO/CASHBACK,TARGET,JUAL\n';
+  laporan.jam.forEach(jam => {
+    laporan.promo.forEach(p => {
+      const key = `Promo_${jam}_${p.nama}`;
+      csv += `${jam},Promo,${p.nama},${p.tgt},${laporan[key] || 0}\n`;
+    });
+    laporan.cashback.forEach(c => {
+      const key = `Cashback_${jam}_${c.nama}`;
+      csv += `${jam},Cashback,${c.nama},${c.tgt},${laporan[key] || 0}\n`;
+    });
+  });
+
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `laporan_shift${laporan.shift}_${laporan.kasir}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Hapus semua data
+function clearData() {
+  if (confirm('Yakin ingin hapus semua data laporan kasir?')) {
+    localStorage.removeItem(K_KEY);
+    laporan = JSON.parse(JSON.stringify(defaultReport));
+    renderForm();
+    updatePreview();
   }
-  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
-  const blob = new Blob([csv], {type:'text/csv'}); const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href=url; a.download=`laporan_kasir_${state.date}.csv`; a.click(); URL.revokeObjectURL(url);
 }
-
-// UI actions
-function generateAndShow(){
-  state.cashier = $('cashierName').value || '';
-  saveState();
-  $('report').textContent = buildShiftReport();
-}
-
-function resetAll(){
-  if (!confirm('Reset semua data hari ini?')) return;
-  state = { date: new Date().toISOString().slice(0,10), cashier:'', slots: JSON.parse(JSON.stringify(DEFAULT_SLOTS)) };
-  saveState(); renderSlots(); $('report').textContent='';
-  $('cashierName').value='';
-}
-
-function copyReport(){ navigator.clipboard.writeText($('report').textContent).then(()=> alert('Laporan disalin ke clipboard')); }
-
-// init
-document.addEventListener('DOMContentLoaded', ()=>{
-  renderSlots();
-  $('btnGenerate').onclick = ()=> generateAndShow();
-  $('btnSave').onclick = ()=> { state.cashier = $('cashierName').value || ''; saveState(); alert('Data tersimpan.'); };
-  $('btnReset').onclick = ()=> resetAll();
-  $('btnCopyShift').onclick = ()=> copyReport();
-  $('btnExportCSV').onclick = ()=> exportCSV();
-  // autogenerate on load so preview visible
-  generateAndShow();
-});
